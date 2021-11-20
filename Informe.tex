@@ -1,0 +1,389 @@
+\documentclass[12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{hyperref}
+
+\date{}
+\author{Reinaldo Barrera Travieso C411: \\ \url{https://github.com/Reinaldo14/Happy-Computing.git}}
+\title{Proyecto de Simulación basado en Eventos Discretos}
+
+\begin{document}
+\maketitle
+
+\newpage
+
+\section*{Introducción}
+
+La simulación de un modelo probabilístico requiere generar los mecanismos estocásticos del modelo y entonces observar el comportamiento del modelo en el tiempo. Dependiendo de las razones para la simulación, existen algunas cantidades de interés que se querrán determinar. Sin embargo, dado que la evolución del modelo en el tiempo requiere de estructuras lógicas complejas de sus elementos, no es siempre sencillo cómo observar esta evolución para determinar las cantidades de interés. Un marco general, construido a partir de la idea de eventos discretos, se ha desarrollado para ayudar a observar un modelo durante el tiempo y determinar las cantidades de interés.
+
+Para el desarrollo de este proyecto y teniendo en cuenta el tiempo como evento discreto se escogió trabajar con el problema Happy Computing, el cual esta relacionado con el funcionamiento de un taller de reparaciones. En las próximas secciones se dará conocer dicho problema, ademas de dar solución y discutir sus resultados.
+
+\section*{Happy Computing}
+
+Happy Computing es un taller de reparaciones electrónicas se realizan las
+siguientes actividades (el precio de cada servicio se muestra entre paréntesis):
+
+\begin{itemize}
+        \item[1.] Reparación por garantía (Gratis)
+        \item[2.] Reparación fuera de garantía (\$350)
+        \item[3.] Cambio de equipo (\$500)
+        \item[4.] Venta de equipos reparados (\$750)
+\end{itemize}
+
+Se conoce además que el taller cuenta con 3 tipos de empleados: Vendedor,
+Técnico y Técnico Especializado.
+
+Para su funcionamiento, cuando un cliente llega al taller, es atendido por
+un vendedor y en caso de que el servicio que requiera sea una Reparación (sea de tipo 1 o 2) el cliente debe ser atendido por un técnico (especializado o no).
+Además en caso de que el cliente quiera un cambio de equipo este debe ser atendido por un técnico especializado. Si todos los empleados que pueden atender al cliente están ocupados, entonces se establece una cola para sus servicios. Un técnico especializado sólo realizará Reparaciones si no hay ningún cliente que desee un cambio de equipo en la cola.
+
+Se conoce que los clientes arriban al local con un intervalo de tiempo que
+distribuye poisson con $\lambda = 20$ minutos y que el tipo de servicios que requieren pueden ser descrito mediante la tabla de probabilidades:\\
+
+\begin{tabular}{cc}
+ Tipo de Servicio & Probabilidad \\
+      1           &       0.45      \\
+      2           &       0.25      \\
+      3           &       0.1     \\
+      4           &       0.2   \\
+\end{tabular}\\
+
+Además se conoce que un técnico tarda un tiempo que distribuye exponencial con $\lambda = 20$ minutos, en realizar una Reparación Cualquiera. Un técnico espe socializado tarda un tiempo que distribuye exponencial con $\lambda = 15$ minutos para realizar un cambio de equipos y la vendedora puede atender cualquier servicio
+en un tiempo que distribuye normal (N(5 min, 2mins)).
+
+El dueño del lugar desea realizar una simulación de la ganancia que tendría en una jornada laboral si tuviera 2 vendedores, 3 técnicos y 1 técnico especializado.
+
+\subsection*{Especificaciones}
+En esta sección vamos a realizar una serie de especificaciones para obtener una mejor compresión del problema de estudio. Algunos de estos elementos son mostrados en el problema, mientras que la mayoría son  asumidos de tal forma que sean lo m\'as similar a la vida real.
+
+Inicialmente el taller comienza a operar en el tiempo 0, que traducido al problema esto significa las $8:00$. A pesar de que el tiempo en la simulaci\'on se mide en minutos, los mensajes son mostrado en un formato de 24h para una mayor comodidad. Una vez que el cliente entra al local, este espera en una cola a que alguno de los vendedores este disponible. Una vez que el cliente es atendidio por un vendedor, puede suceder cualquiera de las dos siguientes opciones.
+
+\begin{itemize}
+        \item El cliente desea comprar un equipo reparado
+        \item El cliente solicita uno de los restantes tres servicios
+
+\end{itemize}
+
+En el caso que se tenga la primera opcion, este es atendidio por el propio vendedor tomando un timpo que distribuye normal (N(5,2)). Una vez finalizado el cliente realiza el pago y se retira del local.
+Para el caso de la segunda opci\'on, se asume que el vendedor consume un timpo de 1 minuto para realizar los siguientes pasos:
+
+\begin{itemize}
+        \item Saludo
+        \item Solicitud del servicio
+        \item Obtenci\'on de los datos del cliente
+        \item Redireccionamiento del cliente al taller
+\end{itemize}
+Una vez que el cliente es enviado al taller este es colocado en una cola en dependencia del servicio pedido. Los clientes que requieren de los servicios 1 y 2 esperan a que un tecnico este libre. Para el caso del servicio 3 hay que esperar por un tecnico especialisado, pero en el caso de que no exista ningun cliente con servicio 3 en espera, los especialistas apoyan a los tecnicos con los servicios 1 y 2. Una vez finalizado el servicio el cliente paga y se retira del local.
+Se asume que el taller trabaja una jornada de 8h, o sea, de 8:00 a 16:00. Como la simulaci\'on trabaja con minutos tenemos que convertir los tiempo, por lo que la simulaci\'on dura un total de $8\cdot60=480$ minutos hipot\'eticamente. 
+?` Por qu\'e hipoteticamente? Pues la jornada dura 8h, pero orientado a la simulaci\'on, lo que sucede es que a partir de las 16:00 no se aceptan m\'as clientes en el taller, pero se finaliza todos los servicios pendientes de lo que a\'un se encuentran esperando dentro del local.
+
+Ahora pasemsos analizar las probabilidades de los servicios. Como se puede ver en el problema para cada servico se tiene una probabilidad para que esta arribe con un cliente al taller. Para general estas, se va a generar un valor random entre 1 y 100. Por tanto generar un valor uniforme en (1, 100) tiene una probabilidad de $\frac{1}{100}$ cada uno. Si se genera un valor que es menor o igual a 45, este genera el servicio 1, ya que la probabilidad de que salga un valor menor o igual a 45 es la probabilidad de que salga un 1 m\'as la de un 2 y asi hatsa 45. Para los demas servicio se realiza la misma operaci\'on. En la siguiente tabla mostramos estos valores teniendo en cuenta que se genera un valor aleatorio R, obtenido uniformemente entre 1 y 100:\\
+
+\begin{tabular}{c|c|c}
+Servicio  & Probabilidad &\\
+\hline
+1 & 0.45 & $R \leq 45$ \\
+2 & 0.25 & $45 < R \leq 70$ \\
+3 & 0.1 & $70 < R \leq 80$ \\
+4 & 0.2 & $80 < R$
+\end{tabular}
+
+\section*{Modelo Discreto}
+
+\noindent \textbf{Variables de tiempo}
+\begin{itemize}
+        \item[$t$:] Timepo general
+        \item[$t_A$:] Timepo de arribo al local
+        \item[$t_V$:] Timepo de arribo al vendedor
+        \item[$t_W$:] Timepo de arribo al taller
+        \item[$t_D$:] Timepo de partida
+\end{itemize}
+
+\noindent \textbf{Variables contadoras}
+\begin{itemize}
+        \item[$N_A$:] Cantidad de arribos
+        \item[$N_V$:] Cantidad de arribos al vendedor
+        \item[$N_W$:] Cantidad de arribos al taller(T\'ecnicos y especialistas)
+        \item[$N_D$:] Cantidad de partidas
+        \item[$N_I$:] Cantidad de ingresos
+        \item[$A$:] Diccionario de arribos
+        \item[$V$:] Diccionario de arribos al vendedor
+        \item[$W$:] Diccionario de arribos al taller
+        \item[$D$:] Diccionario de partidas
+        \item[$I$:] Diccionario de precios de servicios
+\end{itemize}
+
+\noindent \textbf{Variables de estados}
+\begin{itemize}
+        \item[$n_e$] Cantidad de clientes con servicio 3
+        \item[$t_S$] Servicio solicitado por el cliente
+        \item[$VV$]   $=(n, i_1, i_2, ...., i_n):$ n n\'umero de clientes en cola, $i_1$ clientes con vendedor 1, $i_2$ clientes con vendedor 2, ...., la cola
+        \item[$TT$]  $= (k, i_1, i_2, i_3, ...., i_n):$ n n\'umero de clientes en cola, $i_1$ clientes con t\'ecnico 1, $i_2$ clientes con t\'ecnico 2,$i_3$ clientes con t\'ecnico 3 ...., la cola
+\end{itemize}
+
+\noindent \textbf{Inicializaci\'on}
+\begin{itemize}
+        \item[1.] $t=N_A=N_V=N_W=N_D=N_I=n_e=0$
+        \item[2.] $A=\{\}$, $V=\{\}$, $W=\{\}$, $D=\{\}$
+        \item[3.] $I = \{1:0, 2:350, 3:500, 4:750\}$
+        \item[4.] Generar $t_A$, $t_V=t_W=t_D=t_S=\infty$
+\end{itemize}
+
+\noindent \textbf{Evento Arribo: $min(t_A, t_V) == t_A$ $\wedge$ $t_A \leq T$}
+\begin{itemize}
+        \item[1.] Generar $t_{S}$
+        \item[2.] $t = t_A$
+        \item[3.] $N_A = N_A + 1$       
+        \item[4.] Generar $t_{At}$, $t_A = t + t_{At}$
+        \item[5.] $A[N_A] = t$
+        \item[6.] Si $VV == \emptyset$ entonces $VV = (1, N_A, 0)$
+        \item[7.] Si $VV == (1, i_1, 0)$ entonces $VV = (1, j, N_A)$
+        \item[8.] Si $VV == (1, 0, i_2)$ entonces $VV = (1, N_A, j)$
+        \item[9.] Si $n > 1$ entonces $VV = (n+1, i_1, i_2,...,N_A)$
+        \item[10.] General $t_{Vt}$, $t_V = t + t_{Vt}$
+\end{itemize}
+
+\noindent \textbf{Evento Vendedor(con servicio 4): $t_S == 4$ $\wedge$ $t_V \leq t_D$}
+\begin{itemize}
+        \item[1.] $t = t_V$
+        \item[2.] $N_V = N_V + 1$
+        \item[3.] $V[N_V] = t$
+        
+        \item[4.] Si $n == 1$ entonces $VV == \emptyset$
+        \item[5.] Si $n == 2$ entonces $VV == (1, 0, i_2)$
+        \item[6.] Si $n > 2$ entonces $VV == (n-1, i_3, i_2, ...)$
+        
+        \item[7.] Generar $t_{Dt}$, $t_D = t + t_{Dt}$ y $t_W = \infty$
+\end{itemize}
+
+\noindent \textbf{Evento Vendedor(con servicios 1 \'o 2): $t_S \in (1,2)$ $\wedge$ $t_V \leq t_D$ }
+\begin{itemize}
+        \item[1.] $t = t_V$
+        \item[2.] $N_V = N_V + 1$
+        \item[3.] $V[N_V] = t$ 
+        
+        \item[4.] Si $n == 1$ entonces $VV = \emptyset$
+        \item[5.] Si $n == 2$ entonces $VV = (1, 0, i_2)$
+        \item[6.] Si $n > 2$ entonces $VV = (n - 1, i_3, i_2,...)$
+        
+        \item[7.] Si $TT == \emptyset$ entonces $TT = (1, N_V, 0, 0)$
+        \item[8.] Si $TT == (1, i_1, i_2, 0)$ entonces $TT = (2, i_1, i_2, N_V)$
+        \item[9.] Si $TT == (1, i_1, 0, i_3)$ entonces $TT = (2, i_1, N_V, i_3)$
+        \item[10.] Si $TT == (1, i_1, 0, 0)$ entonces $TT = (2, i_1, N_V, 0)$
+        \item[11.] Si $TT == (1, 0, i_2, i_3)$ entonces $TT = (2, N_V, i_2, i_3)$
+        \item[12.] Si $TT == (1, 0, i_2, 0)$ entonces $TT = (2, N_V, i_2, 0)$
+        \item[13.] Si $TT == (1, 0, 0, i_3)$ entonces $TT = (2, N_V, 0, i_3)$
+        \item[14.] Si $k > 1$ entonces $TT = (k+1, i_1, i_2, i_3,...., N_V)$
+        
+        \item[15.] Generar $t_{Wt}$, $t_W = t + t_{Wt}$
+\end{itemize}
+
+\noindent \textbf{Evento Vendedor(con servicio 3): $t_S == 3$ $\wedge$ $t_V \leq t_D$}
+\begin{itemize}
+        \item[1.] $t = t_V$
+        \item[2.] $N_V = N_V + 1$
+        \item[3.] $V[N_V] = t$ 
+        \item[4.] Si $n == 1$ entonces $VV = \emptyset$
+        \item[5.] Si $n == 2$ entonces $VV = (1, 0, i_2)$
+        \item[6.] Si $n > 2$ entonces $VV = (n - 1, i_3, i_2,...)$      
+        \item[7.] $n_e = n_e + 1$       
+        \item[8.] Generar $t_{Wt}$, $t_W = t + t_{Wt}$
+\end{itemize}
+
+\noindent \textbf{Evento t\'ecnico: $t_S \in (1,2)$ $\wedge$ $t_W \leq t_D$}
+\begin{itemize}
+        \item[1.] $t = t_W$
+        \item[2.] $N_W = N_W + 1$
+        \item[3.] $W[N_W] = t$ 
+        \item[4.] Si $k == 1$ entonces $TT = \emptyset$
+        
+        \item[5.] Si $k == 2$ $\wedge$ $TT = (2, 0, i_2, i_3)$ entonces $TT = (1, 0, 0, i_3)$
+        \item[6.] Si $k == 2$ $\wedge$ $TT = (2, i_1, 0, i_3)$ entonces $TT = (1, 0, 0, i_3)$
+        \item[7.] Si $k == 2$ $\wedge$ $TT = (2, i_1, i_2, 0)$ entonces $TT = (1, 0, i_2, 0)$
+        
+        \item[8.] Si $k == 3$ entonces $TT = (1, 0, i_2, i_3)$  
+        \item[9.] Si $k > 3$ entonces $TT = (1, i_4, i_2, i_3,...)$             
+        
+        \item[10.] Generar $t_{Dt}$, $t_D = t + t_{Dt}$
+\end{itemize}
+
+\noindent \textbf{Evento t\'ecnico especialista:$t_S \in (1,2,3)$ $\wedge$ $t_W \leq t_D$}
+\begin{itemize}
+        \item[1.] $t = t_W$
+        \item[2.] $N_W = N_W + 1$
+        \item[3.] $W[N_W] = t$
+        
+        \item[4.] Si $n_e == 0$ $\wedge$ $k == 1$ entonces $TT = \emptyset$
+        
+        \item[5.] Si $n_e == 0$ $\wedge$ $k == 2$ $\wedge$ $TT = (2, 0, i_2, i_3)$ entonces $TT = (1, 0, 0, i_3)$
+        \item[6.] $n_e == 0$ Si $\wedge$ $k == 2$ $\wedge$ $TT = (2, i_1, 0, i_3)$ entonces $TT = (1, 0, 0, i_3)$
+        \item[7.] Si $n_e == 0$ $\wedge$ $k == 2$ $\wedge$ $TT = (2, i_1, i_2, 0)$ entonces $TT = (1, 0, i_2, 0)$
+        
+        \item[8.] $n_e == 0$ Si $\wedge$ $k == 3$ entonces $TT = (1, 0, i_2, i_3)$      
+        \item[9.] $n_e == 0$ Si $\wedge$ $k > 3$ entonces $TT = (1, i_4, i_2, i_3,...)$
+        \item[10.] Si $n_e > 0$ entonces $n_e = n_e - 1$
+        \item[11.] Generar $t_{Dt}$, $t_D = t + t_{Dt}$
+\end{itemize}
+
+\noindent \textbf{Evento salida: $t_D < t_A$}
+\begin{itemize}
+        \item[1.] $t = t_D$
+        \item[2.] $N_D = N_D + 1$
+        \item[3.] $D[N_D] = t$
+        \item[4.] $N_I = N_I + I[t_S] $
+\end{itemize}
+\noindent \textbf{Evento de arribo fuera de tiempo: $t_A > T$}
+\begin{itemize}
+        \item[1.] $t_A = \infty$
+\end{itemize}
+
+\noindent \textbf{Evento de cierre: $t_D < t_A$ $\wedge$ $t_A > T$}
+\begin{itemize}
+        \item[1.] $t = t_D$
+        \item[2.] $N_D = N_D + 1$
+        \item[3.] $D[N_D] = t$
+        \item[4.] $N_I = N_I + I[t_S] $
+\end{itemize}
+
+\section*{Obtenci\'on de resultados}
+
+Para esta seccion vamos a estar mostrando una serie de resultados obtenido a partir de la simulaci\'on. Para esto vamos a estar usando un formato de tabla para asi poder comprender mejor los resultados y poder realizar las comparaciones pertinentes.
+
+Para la simulacion se empleo python usando la bibloteca simpy. En lo que sigue cada vez que mencionamos algun resultado, lo haremos inficado la semilla que se emplo en la bibloteca random de python.
+
+Una primera simulaci\'on es la que se muestra a continuacion usando una semilla igual a 1.\\
+
+\begin{tabular}{|c|c|c|c|c|c|c|c|}
+\hline
+Cliente & Servicio & LLegada & Vendedor & Espera & Taller & Espera & Salida \\
+\hline
+0&4 & 08:40 & 08:40 & 0 & --:-- & 0 & 08:42\\
+1&4 & 09:35 & 09:35 & 0 & --:-- & 0 & 09:38\\
+2&1 & 09:50 & 09:50 & 0 & 09:51 & 1 & 11:02\\
+3&2 & 10:37 & 10:37 & 0 & 10:38 & 1 & 10:43\\
+4&1 & 10:53 & 10:53 & 0 & 10:54 & 1 & 11:20\\
+5&1 & 11:00 & 11:00 & 0 & 11:01 & 1 & 11:46\\
+6&1 & 11:10 & 11:10 & 0 & 11:11 & 1 & 12:24\\
+7&2 & 12:19 & 12:19 & 0 & 12:20 & 1 & 12:22\\
+8&4 & 13:52 & 13:52 & 0 & --:-- & 0 & 13:55\\
+9&1 & 14:22 & 14:22 & 0 & 14:23 & 1 & 14:28\\
+10&2 & 14:34 & 14:34 & 0 & 14:35 & 1 & 14:56\\
+11&4 & 14:45 & 14:45 & 0 & --:-- & 0 & 14:48\\
+12&1 & 15:15 & 15:15 & 0 & 15:16 & 1 & 15:27\\
+13&2 & 15:16 & 15:16 & 0 & 15:17 & 1 & 15:25\\
+14&1 & 15:19 & 15:19 & 0 & 15:20 & 1 & 15:26\\
+15&1 & 15:28 & 15:28 & 0 & 15:29 & 1 & 15:51\\
+\hline
+\end{tabular}\\
+\\
+\noindent Total de Clientes: 16\\
+Dinero recaudado: \$4400\\
+Tiempo total de espera: 12 min\\
+
+Ahora vamos a realizar el mismo analisis pero vamos a reducir la cantidad de empleados a 1 de cada tipo.\\
+\begin{tabular}{|c|c|c|c|c|c|c|c|}
+\hline
+Cliente & Servicio & LLegada & Vendedor & Espera & Taller & Espera & Salida \\
+\hline
+0&4 & 08:40 & 08:40 & 0 & --:-- & 0 & 08:42\\
+1&4 & 09:35 & 09:35 & 0 & --:-- & 0 & 09:38\\
+2&1 & 09:50 & 09:50 & 0 & 09:51 & 1 & 11:02\\
+3&2 & 10:37 & 10:37 & 0 & 10:38 & 1 & 10:43\\
+4&1 & 10:53 & 10:53 & 0 & 10:54 & 1 & 11:20\\
+5&1 & 11:00 & 11:00 & 0 & 11:02 & 2 & 11:47\\
+6&1 & 11:10 & 11:10 & 0 & 11:20 & 10 & 12:33\\
+7&2 & 12:19 & 12:19 & 0 & 12:20 & 1 & 12:22\\
+8&4 & 13:52 & 13:52 & 0 & --:-- & 0 & 13:55\\
+9&1 & 14:22 & 14:22 & 0 & 14:23 & 1 & 14:28\\
+10&2 & 14:34 & 14:34 & 0 & 14:35 & 1 & 14:56\\
+11&4 & 14:45 & 14:45 & 0 & --:-- & 0 & 14:48\\
+12&1 & 15:15 & 15:15 & 0 & 15:16 & 1 & 15:27\\
+13&2 & 15:16 & 15:16 & 0 & 15:17 & 1 & 15:25\\
+14&1 & 15:19 & 15:19 & 0 & 15:25 & 6 & 15:31\\
+15&1 & 15:28 & 15:28 & 0 & 15:29 & 1 & 15:51\\
+\hline
+\end{tabular}\\
+\\
+
+\noindent Total de Clientes: 16\\
+Dinero recaudado: \$4400\\
+Tiempo total de espera: 27 min\\
+
+Comparando estos dos resultados obtenidos podemos ver que los resultados son muy semegante, solo se diferencia en el tiempo de espera de los clientes, lo cual es un rasgo importante en este tipo de simulaci\'on, ya que se busca obtener un resultado obtimo y que los clientes esperen el menor tiempo posible. De estos dos resultado podemos concluir que con un solo vendedor en el local, se puede satifacer de manera igual los requerimientos. El problema se encuentra a la hora de esperar por los t\'ecnicos, ya que pasamos a tener 1 en vez de 3. Aqu\'i es donde se genera todo el tiempo de espera de la simulaci\'on.
+
+Ahora veamos una simulaci\'on para semilla igual a 2.\\
+\begin{tabular}{|c|c|c|c|c|c|c|c|}
+\hline
+Cliente & Servicio & LLegada & Vendedor & Espera & Taller & Espera & Salida \\
+\hline
+0&1 & 08:00 & 08:00 & 0 & 08:01 & 1 & 08:21\\
+1&1 & 08:47 & 08:47 & 0 & 08:48 & 1 & 08:56\\
+2&1 & 08:53 & 08:53 & 0 & 08:54 & 1 & 09:25\\
+3&1 & 09:20 & 09:20 & 0 & 09:21 & 1 & 09:57\\
+4&2 & 09:30 & 09:30 & 0 & 09:31 & 1 & 09:35\\
+5&2 & 09:38 & 09:38 & 0 & 09:39 & 1 & 09:52\\
+6&2 & 09:39 & 09:39 & 0 & 09:40 & 1 & 10:00\\
+7&1 & 09:40 & 09:40 & 0 & 09:41 & 1 & 09:42\\
+8&2 & 09:42 & 09:42 & 0 & 09:43 & 1 & 09:45\\
+9&1 & 09:59 & 09:59 & 0 & 10:00 & 1 & 10:28\\
+10&1 & 10:10 & 10:10 & 0 & 10:11 & 1 & 10:46\\
+11&2 & 10:44 & 10:44 & 0 & 10:45 & 1 & 10:45\\
+12&4 & 10:57 & 10:57 & 0 & --:-- & 0 & 11:01\\
+13&2 & 11:08 & 11:08 & 0 & 11:09 & 1 & 11:15\\
+14&4 & 11:12 & 11:12 & 0 & --:-- & 0 & 11:15\\
+15&2 & 11:32 & 11:32 & 0 & 11:33 & 1 & 11:38\\
+16&2 & 11:32 & 11:32 & 0 & 11:33 & 1 & 11:39\\
+17&2 & 12:08 & 12:08 & 0 & 12:09 & 1 & 12:36\\
+18&1 & 12:16 & 12:16 & 0 & 12:17 & 1 & 12:21\\
+19&2 & 12:17 & 12:17 & 0 & 12:18 & 1 & 12:26\\
+20&2 & 12:30 & 12:30 & 0 & 12:31 & 1 & 12:46\\
+21&3 & 12:32 & 12:32 & 0 & 12:33 & 1 & 12:41\\
+22&2 & 12:38 & 12:38 & 0 & 12:39 & 1 & 13:09\\
+23&1 & 12:52 & 12:52 & 0 & 12:53 & 1 & 12:56\\
+24&3 & 12:56 & 12:56 & 0 & 12:57 & 1 & 12:58\\
+25&1 & 13:22 & 13:22 & 0 & 13:23 & 1 & 13:27\\
+26&2 & 13:45 & 13:45 & 0 & 13:46 & 1 & 13:59\\
+27&3 & 13:56 & 13:56 & 0 & 13:57 & 1 & 14:14\\
+28&1 & 14:06 & 14:06 & 0 & 14:07 & 1 & 14:27\\
+29&4 & 14:20 & 14:20 & 0 & --:-- & 0 & 14:22\\
+30&1 & 14:29 & 14:29 & 0 & 14:30 & 1 & 14:31\\
+31&1 & 14:35 & 14:35 & 0 & 14:36 & 1 & 14:44\\
+32&1 & 14:35 & 14:35 & 0 & 14:36 & 1 & 15:01\\
+33&1 & 15:31 & 15:31 & 0 & 15:32 & 1 & 15:33\\
+34&4 & 15:38 & 15:38 & 0 & --:-- & 0 & 15:42\\
+35&1 & 15:50 & 15:50 & 0 & 15:51 & 1 & 15:52\\
+36&1 & 15:53 & 15:53 & 0 & 15:54 & 1 & 16:00\\
+\hline
+\end{tabular}\\
+\\
+
+\noindent Total de Clientes: 37\\
+Dinero recaudado: \$9050\\
+Tiempo total de espera: 33 min\\
+
+Como podemos ver en este \'ultimo resultado la simulaci\'on con la cantidad de empleados especificado en el problema es aceptable, ya que los clientes nunca esperan m\'as de 1 min para realizar su servicio.
+Por ultimo vamos a realizar una simulaci\'on durante toda una semana(5 d\'ias), de lunes a viernes y cada dia de la semana va a ser el valor de la semilla que se va a usar. Tambi\'en se va a incluir el sabado, pero para este en particular solo en una jornada de 4h.\\
+
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+D\'ia & Total clientes & Dinero recaudado & Tiempo de espera & Hora de cierre \\ 
+\hline
+1 & 16 & \$4400 & 12 min & 15:51 \\
+2 & 37 & \$9050 & 33 min & 16:00 \\
+3 & 27 & \$7400 & 36 min & 15:18 \\
+4 & 21 & \$5050 & 63 min & 15:56 \\
+5 & 28 & \$6450 & 47 min & 16:10 \\
+6 & 20 & \$6350 & 15 min & 11:55 \\
+\hline
+\end{tabular}
+\section*{Conclusiones}
+
+Como se vieron en la discuirci\'on de los resultados las simulaciones no siguen un patron fijo, la llegada de los clientes es muy variado. Como exige este tipo de simulacion una vez que el cliente entra a la tienda debe ser atendido, pero por lo general y con el numero de empleado que tiene, el tiempo de cierre comparado con el establecido no es muy diferntes. Por lo general todo los resultados son satifactotios, las recaudaciones de fondos en el taller no son bajas y los tiempo de espera de los clientes no son muy elevados.
+
+Como sugerencia y como se vio en algunos resultados es recomendable reducir el nuemro de vendedores del taller, ya que esto no implica cambios bruscos en los tiempos de espera de los clientes y de esta forma se obtimiza los gasto dedicados al pago de los trabajdores. Pero aun asi la cantidad de trabajodres existentes no producen un cuello de botella en las colas de los diferentes servicios.
+ 
+\end{document}
